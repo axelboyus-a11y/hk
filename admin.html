@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Admin | Ratan Bro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --pink: #ff4d94;
+            --dark: #020617;
+            --card: #1e293b;
+        }
+
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background: var(--dark);
+            color: white;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Login Overlay */
+        #login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--dark);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-box {
+            background: var(--card);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            border: 1px solid var(--pink);
+            width: 90%;
+            max-width: 400px;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: none;
+            outline: none;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+
+        /* Dashboard Layout */
+        header {
+            background: var(--pink);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            padding: 25px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 25px;
+            border-left: 5px solid var(--pink);
+            position: relative;
+        }
+
+        .stat-card h3 {
+            color: var(--pink);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .data-list {
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid #334155;
+            padding: 5px 0;
+        }
+
+        .label {
+            color: #94a3b8;
+        }
+
+        .btn-refresh {
+            background: var(--pink);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <i class="fas fa-lock" style="font-size: 3rem; color: var(--pink);"></i>
+            <h2 style="margin-top:15px;">Admin Access</h2>
+            <input type="password" id="adminPass" placeholder="পাসওয়ার্ড দিন">
+            <button class="btn-refresh" onclick="checkPass()">Login</button>
+        </div>
+    </div>
+
+    <header>
+        <h1><i class="fas fa-shield-alt"></i> Control Center</h1>
+    </header>
+
+    <div class="container">
+        <div class="grid">
+
+            <div class="stat-card">
+                <h3><i class="fas fa-chart-line"></i> ভিজিটর পরিসংখ্যান</h3>
+                <div class="data-list">
+                    <div class="data-item"><span class="label">মোট ভিউ:</span> <span id="totalViews">Loading...</span>
+                    </div>
+                    <div class="data-item"><span class="label">সর্বশেষ আপডেট:</span> <span>আজ</span></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <h3><i class="fas fa-user-secret"></i> আপনার বর্তমান তথ্য (Self Monitor)</h3>
+                <div class="data-list">
+                    <div class="data-item"><span class="label">IP Address:</span> <span id="ip">Fetching...</span></div>
+                    <div class="data-item"><span class="label">ব্যাটারি:</span> <span id="battery">...</span></div>
+                    <div class="data-item"><span class="label">ডিভাইস:</span> <span id="platform">...</span></div>
+                    <div class="data-item"><span class="label">লোকেশন:</span> <span id="loc">...</span></div>
+                </div>
+                <button class="btn-refresh" style="width:100%;" onclick="trackSelf()">তথ্য রিফ্রেশ করুন</button>
+            </div>
+
+            <div class="stat-card">
+                <h3><i class="fas fa-database"></i> ডাটাবেস কন্ট্রোল</h3>
+                <p style="font-size: 0.8rem; color: #94a3b8;">এখান থেকে আপনি আপনার Firebase এর ভিউ কাউন্ট রিসেট বা এডিট
+                    করতে পারবেন।</p>
+                <button class="btn-refresh" style="background:#334155; width:100%;" onclick="resetViews()">Reset View
+                    Counter</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        // আপনার Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyC4ExRu3Oze8api5-ueDTBqZOceSa8wclo",
+            authDomain: "ratanweab.firebaseapp.com",
+            projectId: "ratanweab",
+            storageBucket: "ratanweab.firebasestorage.app",
+            messagingSenderId: "611953936063",
+            appId: "1:611953936063:web:7e3ca24060d7478fb2a80a",
+            measurementId: "G-L5PMNWZB58"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // পাসওয়ার্ড চেক (আপনার জন্য পাসওয়ার্ড: 1109)
+        window.checkPass = () => {
+            const pass = document.getElementById('adminPass').value;
+            if (pass === "1109") { // আপনি এখানে আপনার মনের মতো পাসওয়ার্ড দিতে পারেন
+                document.getElementById('login-overlay').style.fadeOut = "slow";
+                document.getElementById('login-overlay').style.display = 'none';
+                loadStats();
+            } else {
+                alert("ভুল পাসওয়ার্ড!");
+            }
+        }
+
+        // ডাটা লোড করা
+        async function loadStats() {
+            const snap = await getDoc(doc(db, "stats", "visitors"));
+            if (snap.exists()) {
+                document.getElementById('totalViews').innerText = snap.data().count;
+            }
+        }
+
+        // ভিউ রিসেট করা
+        window.resetViews = async () => {
+            if (confirm("আপনি কি ভিউ কাউন্টার ১৩৮ এ রিসেট করতে চান?")) {
+                await updateDoc(doc(db, "stats", "visitors"), { count: 138 });
+                loadStats();
+            }
+        }
+
+        // সেলফ ট্র্যাকিং লজিক
+        window.trackSelf = async () => {
+            // IP
+            fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => document.getElementById('ip').innerText = d.ip);
+            // Battery
+            if (navigator.getBattery) {
+                const b = await navigator.getBattery();
+                document.getElementById('battery').innerText = Math.round(b.level * 100) + "% " + (b.charging ? "(Charging)" : "");
+            }
+            // Device
+            document.getElementById('platform').innerText = navigator.platform;
+            // Location
+            navigator.geolocation.getCurrentPosition(p => {
+                document.getElementById('loc').innerText = p.coords.latitude.toFixed(2) + ", " + p.coords.longitude.toFixed(2);
+            });
+        }
+    </script>
+</body>
+
+</html>
